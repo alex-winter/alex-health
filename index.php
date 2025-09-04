@@ -42,6 +42,8 @@ $app->get('/callback', function (Request $request, Response $response) use ($fit
     try {
         $tokenData = $fitbitClient->requestAccessToken($authorizationCode);
 
+        $today = date('Y-m-d');
+
         $profileData = $fitbitClient->get('/1/user/-/profile.json');
         $activitiesData = $fitbitClient->get('/1/user/-/activities/date/' . date('Y-m-d') . '.json');
         $stepsData = $fitbitClient->get('/1/user/-/activities/steps/date/' . date('Y-m-d') . '/1d.json');
@@ -73,6 +75,8 @@ $app->get('/callback', function (Request $request, Response $response) use ($fit
 <body>
 <div class="container mt-5">
     <h1 class="mb-4">Fitbit Dashboard</h1>
+
+    {$today}
 
     <div class="card mb-4">
         <div class="card-header">Profile</div>
