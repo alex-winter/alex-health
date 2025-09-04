@@ -2,7 +2,7 @@
     "name": "alex-winter/health",
     "autoload": {
         "psr-4": {
-            "AlexWinter\\Health\\": "src/"
+            "App\\": "src/"
         }
     },
     "authors": [
@@ -13,7 +13,6 @@
     ],
     "require": {
         "slim/slim": "^4",
-        "guzzlehttp/guzzle": "*",
-        "namelivia/fitbit-http-php": "^0.0.15"
+        "guzzlehttp/guzzle": "*"
     }
 }
