@@ -13,6 +13,7 @@
     ],
     "require": {
         "slim/slim": "^4",
-        "guzzlehttp/guzzle": "*"
+        "guzzlehttp/guzzle": "*",
+        "namelivia/fitbit-http-php": "^0.0.15"
     }
 }
