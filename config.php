@@ -2,12 +2,6 @@
 // config.php
 require __DIR__ . '/vendor/autoload.php';
 
-use Dotenv\Dotenv;
-
-// Load .env variables
-$dotenv = Dotenv::createImmutable(__DIR__);
-$dotenv->load();
-
 return [
     'clientId'     => $_ENV['FITBIT_CLIENT_ID'],
     'clientSecret' => $_ENV['FITBIT_CLIENT_SECRET'],
