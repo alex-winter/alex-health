@@ -49,9 +49,18 @@ $app->get('/callback', function (Request $request, Response $response) use ($fit
         $sleepData = $fitbitClient->get('/1.2/user/-/sleep/date/' . date('Y-m-d') . '.json');
 
         $userProfile = $profileData['user'] ?? [];
-        $dailySteps = $stepsData['activities-steps'][0]['value'] ?? 'N/A';
+        $dailyStepsValue = $stepsData['activities-steps'][0]['value'] ?? 'N/A';
         $heartRateSummary = $heartRateData['activities-heart'][0]['value'] ?? [];
+        $restingHeartRate = $heartRateSummary['restingHeartRate'] ?? 'N/A';
         $sleepSummary = $sleepData['summary'] ?? [];
+        $totalSleepMinutes = $sleepSummary['totalMinutesAsleep'] ?? 'N/A';
+        $sleepEfficiency = $sleepSummary['sleepEfficiency'] ?? 'N/A';
+
+        $userFullName = $userProfile['fullName'] ?? 'N/A';
+        $userAge = $userProfile['age'] ?? 'N/A';
+        $userHeight = $userProfile['height'] ?? 'N/A';
+        $userWeight = $userProfile['weight'] ?? 'N/A';
+        $userAvatar = $userProfile['avatar150'] ?? '';
 
         $html = <<<HTML
 <!DOCTYPE html>
@@ -68,34 +77,34 @@ $app->get('/callback', function (Request $request, Response $response) use ($fit
     <div class="card mb-4">
         <div class="card-header">Profile</div>
         <div class="card-body">
-            <p><strong>Name:</strong> {$userProfile['fullName']}</p>
-            <p><strong>Age:</strong> {$userProfile['age']}</p>
-            <p><strong>Height:</strong> {$userProfile['height']} cm</p>
-            <p><strong>Weight:</strong> {$userProfile['weight']} kg</p>
-            <img src="{$userProfile['avatar150']}" alt="Avatar" class="img-thumbnail">
+            <p><strong>Name:</strong> {$userFullName}</p>
+            <p><strong>Age:</strong> {$userAge}</p>
+            <p><strong>Height:</strong> {$userHeight} cm</p>
+            <p><strong>Weight:</strong> {$userWeight} kg</p>
+            <img src="{$userAvatar}" alt="Avatar" class="img-thumbnail">
         </div>
     </div>
 
     <div class="card mb-4">
         <div class="card-header">Today’s Activity</div>
         <div class="card-body">
-            <p><strong>Steps:</strong> {$dailySteps}</p>
-            <p><strong>Resting Heart Rate:</strong> {$heartRateSummary['restingHeartRate'] ?? 'N/A'} bpm</p>
+            <p><strong>Steps:</strong> {$dailyStepsValue}</p>
+            <p><strong>Resting Heart Rate:</strong> {$restingHeartRate} bpm</p>
         </div>
     </div>
 
     <div class="card mb-4">
         <div class="card-header">Sleep Summary</div>
         <div class="card-body">
-            <p><strong>Total Sleep:</strong> {$sleepSummary['totalMinutesAsleep'] ?? 'N/A'} minutes</p>
-            <p><strong>Efficiency:</strong> {$sleepSummary['sleepEfficiency'] ?? 'N/A'}%</p>
+            <p><strong>Total Sleep:</strong> {$totalSleepMinutes} minutes</p>
+            <p><strong>Efficiency:</strong> {$sleepEfficiency}%</p>
         </div>
     </div>
 
     <div class="card mb-4">
-        <div class="card-header">Raw Data</div>
+        <div class="card-header">Raw Activity Data</div>
         <div class="card-body">
-            <pre>{$htmlspecialchars(print_r(['activities' => $activitiesData], true))}</pre>
+            <pre>{htmlspecialchars(print_r(['activities' => $activitiesData], true))}</pre>
         </div>
     </div>
 </div>
@@ -111,6 +120,7 @@ HTML;
         return $response->withStatus(500);
     }
 });
+
 
 
 $app->run();
