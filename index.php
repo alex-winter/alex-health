@@ -1,10 +1,8 @@
 <?php
-// index.php
-
 require __DIR__ . '/vendor/autoload.php';
 
 use Slim\Factory\AppFactory;
-use Fitbit\Fitbit;
+use Namelivia\Fitbit\Api\Api;
 use GuzzleHttp\Client;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -17,21 +15,21 @@ $clientSecret = getenv('FITBIT_CLIENT_SECRET');
 $redirectUri  = getenv('FITBIT_REDIRECT_URI');
 $scope        = 'activity heartrate sleep profile';
 
-// Initialize Fitbit SDK
-$fitbit = new Fitbit($clientId, $clientSecret);
+// Instantiate Fitbit SDK API
+$fitbit = new Api($clientId, $clientSecret);
 
-// 1. Route: Start OAuth flow
+// 1. Start OAuth flow
 $app->get('/auth', function (Request $request, Response $response) use ($fitbit, $redirectUri, $scope) {
     $authUrl = $fitbit->getAuthorizationUrl($redirectUri, $scope);
     return $response->withHeader('Location', $authUrl)->withStatus(302);
 });
 
-// 2. Route: Handle callback
+// 2. Handle callback
 $app->get('/callback', function (Request $request, Response $response) use ($fitbit, $redirectUri) {
     $params = $request->getQueryParams();
     if (!isset($params['code'])) {
         $response->getBody()->write("Error: no code returned.");
-        return $response;
+        return $response->withStatus(400);
     }
 
     $code = $params['code'];
@@ -40,35 +38,21 @@ $app->get('/callback', function (Request $request, Response $response) use ($fit
     $tokens = $fitbit->getAccessToken($code, $redirectUri);
     $accessToken = $tokens['access_token'];
 
-    // Use access token to call Fitbit API
-    $client = new Client();
-    $profileRes = $client->get("https://api.fitbit.com/1/user/-/profile.json", [
-        'headers' => [
-            'Authorization' => "Bearer $accessToken",
-        ]
-    ]);
-    $profile = json_decode($profileRes->getBody()->getContents(), true);
+    // Use SDK methods to get profile, steps, heart rate, sleep, etc.
+    $fitbit->setAccessToken($accessToken);
 
-    // Retrieve additional data (e.g., steps, heart rate)
-    $stepsRes = $client->get("https://api.fitbit.com/1/user/-/activities/steps/date/today/1d.json", [
-        'headers' => [
-            'Authorization' => "Bearer $accessToken",
-        ]
-    ]);
-    $steps = json_decode($stepsRes->getBody()->getContents(), true);
+    $profile   = $fitbit->getProfile();
+    $activities = $fitbit->getActivities(date('Y-m-d'));
+    $steps      = $fitbit->getSteps(date('Y-m-d'));
+    $heartRate  = $fitbit->getHeartRate(date('Y-m-d'));
+    $sleep      = $fitbit->getSleep(date('Y-m-d'));
 
-    $heartRateRes = $client->get("https://api.fitbit.com/1/user/-/activities/heart/date/today/1d.json", [
-        'headers' => [
-            'Authorization' => "Bearer $accessToken",
-        ]
-    ]);
-    $heartRate = json_decode($heartRateRes->getBody()->getContents(), true);
-
-    // Combine all data
     $data = [
-        'profile' => $profile,
-        'steps'   => $steps,
-        'heartRate' => $heartRate,
+        'profile'    => $profile,
+        'activities' => $activities,
+        'steps'      => $steps,
+        'heartRate'  => $heartRate,
+        'sleep'      => $sleep,
     ];
 
     $response->getBody()->write("<h1>Fitbit Data</h1><pre>" . print_r($data, true) . "</pre>");
