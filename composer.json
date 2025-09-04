@@ -1,0 +1,19 @@
+{
+    "name": "alex-winter/health",
+    "autoload": {
+        "psr-4": {
+            "AlexWinter\\Health\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Alex Winter",
+            "email": "ajwinter42@gmail.com"
+        }
+    ],
+    "require": {
+        "slim/slim": "^4",
+        "guzzlehttp/guzzle": "*",
+        "vlucas/phpdotenv": "^5.6"
+    }
+}
