@@ -51,7 +51,12 @@ class FitbitClient
             ]
         ]);
 
-        $responseData = json_decode((string)$response->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        $responseData = json_decode(
+            (string)$response->getBody(), 
+            true, 
+            512, 
+            JSON_THROW_ON_ERROR,
+        );
 
         $this->accessToken = $responseData['access_token'] ?? null;
 
