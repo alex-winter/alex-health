@@ -1,3 +1,8 @@
+import { writeFile } from "fs/promises";
+import path from "path";
+
+const tokenFilePath = path.resolve("./tokens.json");
+
 export async function authCallbackHandler(req, res, fitbitClient) {
   const { code } = req.query;
 
@@ -7,7 +12,14 @@ export async function authCallbackHandler(req, res, fitbitClient) {
 
   try {
     const tokenData = await fitbitClient.getToken(code);
-    res.json(tokenData);
+
+    // Save token to file
+    await writeFile(tokenFilePath, JSON.stringify(tokenData, null, 2), "utf8");
+
+    res.json({
+      message: "Token saved successfully",
+      token: tokenData,
+    });
   } catch (err) {
     console.error(err.response?.data || err.message);
     res.status(500).send("Error exchanging code for token");
