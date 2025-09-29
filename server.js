@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 import { authHandler } from "./src/Http/RequestHandlers/AuthRequestHandler.js";
 import { authCallbackHandler } from "./src/Http/RequestHandlers/AuthCallbackRequestHandler.js";
 import { FitbitClient } from "./src/Services/FitbitClient.js";
+import { MySQL } from "./src/Services/MySQL.js";
 
 dotenv.config();
 
@@ -69,6 +70,64 @@ app.get('/weight-logs', async (req, res) => {
       details: err.response?.data || err.message,
     });
   }
+});
+
+app.post('/sync', async (request, response) => {
+
+  const database = new MySQL()
+  await database.connect()
+
+  const pool = database.getPool()
+
+  const sql = `
+    SELECT MAX(date) AS latest_date 
+    FROM weight_logs
+  `
+
+  const [rows] = pool.execute(sql)
+  const latestDate = rows[0]?.latest_date || null
+
+  let startDate = latestDate ? dayjs(latestDate).add(1, 'day').format('YYYY-MM-DD') : '1900-01-01'
+  let endDate = dayjs().subtract(1, 'day').format('YYYY-MM-DD')
+
+  if (dayjs(startDate).isAfter(endDate)) {
+    return response.json({
+      message: 'No new data to sync',
+    })
+  } else {
+
+    const logs = await fitbitClient.getWeightLogs(startDate, endDate)
+
+    if (logs.length === 0) {
+      return response.json({
+        message: 'No new data to sync',
+      })
+    } else {
+      const insertSql = `
+        INSERT INTO weight_logs (date, weight, bmi)
+        VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          weight = VALUES(weight),
+          bmi = VALUES(bmi)
+      `
+
+      const insertPromises = logs.map(log => {
+        return pool.execute(insertSql, [log.date, log.weight, log.bmi])
+      })  
+      await Promise.all(insertPromises)
+      return response.json({
+        message: `Successfully synced ${logs.length} records from ${startDate} to ${endDate}`,
+        syncedRecords: logs.length,
+        startDate,
+        endDate
+      })
+    }
+
+  }
+
+
+
+  fitbitClient.getWeightLogs()
 });
 
 // Start server

@@ -13,7 +13,6 @@ export class FitbitClient {
     this.baseUrl = "https://api.fitbit.com";
   }
 
-  // Build Fitbit OAuth URL for user login
   getAuthUrl() {
     const scope = "activity heartrate sleep weight";
     return `https://www.fitbit.com/oauth2/authorize` +
@@ -23,7 +22,6 @@ export class FitbitClient {
       `&scope=${encodeURIComponent(scope)}`;
   }
 
-  // Exchange an auth code for access + refresh tokens
   async getToken(code) {
     const tokenUrl = `${this.baseUrl}/oauth2/token`;
     const creds = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString("base64");
@@ -44,11 +42,12 @@ export class FitbitClient {
     );
 
     const tokens = response.data;
+    
     await this.saveTokens(tokens);
+
     return tokens;
   }
 
-  // Refresh expired access token
   async refreshToken(refreshToken) {
     const tokenUrl = `${this.baseUrl}/oauth2/token`;
     const creds = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString("base64");
@@ -72,26 +71,24 @@ export class FitbitClient {
     return tokens;
   }
 
-  // Save tokens with a timestamp
   async saveTokens(tokens) {
     const data = {
       ...tokens,
-      obtained_at: Date.now(), // record when we got the token
+      obtained_at: Date.now(),
     };
+
     await writeFile(tokenFilePath, JSON.stringify(data, null, 2), "utf8");
   }
 
-  // Load tokens from disk
   async loadTokens() {
     try {
       const data = await readFile(tokenFilePath, "utf8");
       return JSON.parse(data);
     } catch {
-      return null; // file doesn't exist yet
+      return null;
     }
   }
 
-  // Get a valid access token (refresh only if expired)
   async getAccessToken() {
     let tokens = await this.loadTokens();
     if (!tokens) throw new Error("No tokens found, please authenticate first.");
@@ -106,7 +103,6 @@ export class FitbitClient {
     return tokens.access_token;
   }
 
-  // Get weight logs for a single day
   async getWeightLogForDay(date) {
     const accessToken = await this.getAccessToken();
     const url = `${this.baseUrl}/1/user/-/body/log/weight/date/${date}.json`;
@@ -118,8 +114,7 @@ export class FitbitClient {
     return response.data.weight || [];
   }
 
-  // Get weight logs for a range of days (loop through each day)
-  async getWeightLogs(startDate = "1900-01-01", endDate) {
+  async getWeightLogs(startDate = '1900-01-01', endDate) {
     const today = dayjs().format("YYYY-MM-DD");
     let finalEndDate = endDate ? (dayjs(endDate).isAfter(today) ? today : endDate) : today;
 

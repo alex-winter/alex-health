@@ -11,14 +11,14 @@ export async function authCallbackHandler(req, res, fitbitClient) {
   }
 
   try {
-    const tokenData = await fitbitClient.getToken(code);
+    const token = await fitbitClient.getToken(code);
 
     // Save token to file
-    await writeFile(tokenFilePath, JSON.stringify(tokenData, null, 2), "utf8");
+    await writeFile(tokenFilePath, JSON.stringify(token, null, 2), "utf8");
 
     res.json({
       message: "Token saved successfully",
-      token: tokenData,
+      token,
     });
   } catch (err) {
     console.error(err.response?.data || err.message);
