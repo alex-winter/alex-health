@@ -73,61 +73,61 @@ app.get('/weight-logs', async (req, res) => {
 });
 
 app.post('/sync', async (request, response) => {
+  console.log('🔄 /sync endpoint called');
 
-  const database = new MySQL()
-  await database.connect()
+  const database = new MySQL();
+  await database.connect();
+  console.log('✅ Connected to MySQL database');
 
-  const pool = database.getPool()
+  const pool = database.getPool();
 
   const sql = `
     SELECT MAX(date) AS latest_date 
     FROM weight_logs
-  `
+  `;
 
-  const [rows] = pool.execute(sql)
-  const latestDate = rows[0]?.latest_date || null
+  const [rows] = await pool.execute(sql);
+  const latestDate = rows[0]?.latest_date || null;
+  console.log(`🗓️ Latest date in DB: ${latestDate}`);
 
-  let startDate = latestDate ? dayjs(latestDate).add(1, 'day').format('YYYY-MM-DD') : '1900-01-01'
-  let endDate = dayjs().subtract(1, 'day').format('YYYY-MM-DD')
+  let startDate = latestDate ? dayjs(latestDate).add(1, 'day').format('YYYY-MM-DD') : '1900-01-01';
+  let endDate = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
+  console.log(`📅 Syncing from ${startDate} to ${endDate}`);
 
   if (dayjs(startDate).isAfter(endDate)) {
+    console.log('ℹ️ No new data to sync');
     return response.json({
       message: 'No new data to sync',
-    })
+    });
   } else {
-
-    const logs = await fitbitClient.getWeightLogs(startDate, endDate)
+    const logs = await fitbitClient.getWeightLogs(startDate, endDate);
+    console.log(`📥 Retrieved ${logs.length} logs from Fitbit API`);
 
     if (logs.length === 0) {
+      console.log('ℹ️ No new data to sync from Fitbit');
       return response.json({
         message: 'No new data to sync',
-      })
+      });
     } else {
       const insertSql = `
-        INSERT INTO weight_logs (date, weight, bmi)
+        INSERT IGNORE INTO weight_logs (date, weight, bmi)
         VALUES (?, ?, ?)
-        ON DUPLICATE KEY UPDATE
-          weight = VALUES(weight),
-          bmi = VALUES(bmi)
-      `
+      `;
 
       const insertPromises = logs.map(log => {
-        return pool.execute(insertSql, [log.date, log.weight, log.bmi])
-      })  
-      await Promise.all(insertPromises)
+        return pool.execute(insertSql, [log.date, log.weight, log.bmi]);
+      });
+      await Promise.all(insertPromises);
+      console.log(`✅ Successfully synced ${logs.length} records to DB`);
+
       return response.json({
         message: `Successfully synced ${logs.length} records from ${startDate} to ${endDate}`,
         syncedRecords: logs.length,
         startDate,
         endDate
-      })
+      });
     }
-
   }
-
-
-
-  fitbitClient.getWeightLogs()
 });
 
 // Start server
